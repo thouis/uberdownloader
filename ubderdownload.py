@@ -35,11 +35,13 @@ def user_games(user_id):
         yield r["id"]
 
 def user_reviews(user_id):
+    return
     url = "https://online-go.com/api/v1/reviews/?owner__id={}&format=json".format(user_id)
     for r in results(url):
         yield r["id"], r["game"]["id"]
 
 def reviews_for_game(game_id):
+    return
     url = "http://online-go.com/api/v1/games/{}/reviews?format=json".format(game_id)
     for r in results(url):
         yield r["id"]
