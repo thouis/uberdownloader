@@ -30,7 +30,7 @@ def results(url):
         url = data["next"]
 
 def user_games(user_id):
-    url = "http://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
+    url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
     for r in results(url):
         yield r["id"]
 
@@ -42,7 +42,7 @@ def user_reviews(user_id):
 
 def reviews_for_game(game_id):
     return
-    url = "http://online-go.com/api/v1/games/{}/reviews?format=json".format(game_id)
+    url = "https://online-go.com/api/v1/games/{}/reviews?format=json".format(game_id)
     for r in results(url):
         yield r["id"]
 
@@ -64,15 +64,15 @@ if __name__ == "__main__":
 
     for g in user_games(sys.argv[1]):
         save_sgf(os.path.join(dest_dir, "OGS_game_{}.sgf".format(g)),
-                 "http://online-go.com/api/v1/games/{}/sgf".format(g),
+                 "https://online-go.com/api/v1/games/{}/sgf".format(g),
                  "game {}".format(g))
         for r in reviews_for_game(g):
             save_sgf(os.path.join(dest_dir, "OGS_game_{}_review_{}.sgf".format(g, r)),
-                     "http://online-go.com/api/v1/reviews/{}/sgf".format(g),
+                     "https://online-go.com/api/v1/reviews/{}/sgf".format(g),
                      "review {} of game {}".format(r, g))
 
     for r, g in user_reviews(sys.argv[1]):
             save_sgf(os.path.join(dest_dir, "OGS_game_{}_review_{}.sgf".format(g, r)),
-                     "http://online-go.com/api/v1/reviews/{}/sgf".format(g),
+                     "https://online-go.com/api/v1/reviews/{}/sgf".format(g),
                      "review {} of game {}".format(r, g))
 
