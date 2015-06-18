@@ -4,13 +4,8 @@ import json
 import sys
 import os
 import os.path
-import traceback
 
-def get_page_with_wait(url, wait=6):  # SGF throttling is 10/minute
-    global request_successful
-    global max_retries
-    global current_retry
-
+def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SGF throttling is 10/minute
     if wait < 0.01:
         wait = 0.01
 
@@ -24,19 +19,12 @@ def get_page_with_wait(url, wait=6):  # SGF throttling is 10/minute
             return get_page_with_wait(url, wait=(1.5 * wait))
         raise
     except urllib2.URLError as e:
-        if e.reason.errno == -2:  # Name or service not known
-            if request_successful:
-                if current_retry < max_retries:
-                    print("Address lookup error after success.  Trying again.")
-                    current_retry += 1
-                    return get_page_with_wait(url, 5)  # Wait 5 seconds between retries
-            print("Address lookup failing.  Check your network connection")
-            exit(1)
+        # sometimes DNS or the network temporarily falls over, and will come back if we try again
+        if current_retry_count < max_retries:
+            return get_page_with_wait(url, 5, current_retry_count=current_retry_count + 1)  # Wait 5 seconds between retries
+        print("Can't fetch '{}'.  Check your network connection.".format(url))
         raise
     else:
-        # everything is fine
-        current_retry = 0
-        request_successful = True
         return response.read()
 
 def results(url):
@@ -96,4 +84,3 @@ if __name__ == "__main__":
             save_sgf(os.path.join(dest_dir, "OGS_game_{}_review_{}.sgf".format(g, r)),
                      "https://online-go.com/api/v1/reviews/{}/sgf".format(g),
                      "review {} of game {}".format(r, g))
-
