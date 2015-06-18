@@ -7,8 +7,13 @@ import os.path
 import traceback
 
 def get_page_with_wait(url, wait=6):  # SGF throttling is 10/minute
-    if wait <= 0:
+    global request_successful
+    global max_retries
+    global current_retry
+
+    if wait < 0.01:
         wait = 0.01
+
     try:
         time.sleep(wait)
         response = urllib2.urlopen(url)
@@ -18,8 +23,20 @@ def get_page_with_wait(url, wait=6):  # SGF throttling is 10/minute
             # exponential falloff
             return get_page_with_wait(url, wait=(1.5 * wait))
         raise
+    except urllib2.URLError as e:
+        if e.reason.errno == -2:  # Name or service not known
+            if request_successful:
+                if current_retry < max_retries:
+                    print("Address lookup error after success.  Trying again.")
+                    current_retry += 1
+                    return get_page_with_wait(url, 5)  # Wait 5 seconds between retries
+            print("Address lookup failing.  Check your network connection")
+            exit(1)
+        raise
     else:
         # everything is fine
+        current_retry = 0
+        request_successful = True
         return response.read()
 
 def results(url):
@@ -58,6 +75,10 @@ def save_sgf(out_filename, SGF_URL, name):
 if __name__ == "__main__":
     user_id = int(sys.argv[1])
     dest_dir = sys.argv[2]
+
+    request_successful = False
+    max_retries = 5
+    current_retry = 0
 
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
