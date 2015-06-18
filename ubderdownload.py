@@ -14,8 +14,6 @@ def get_page_with_wait(url, wait=6):  # SGF throttling is 10/minute
     if wait < 0.01:
         wait = 0.01
 
-    print(time.time(), wait, current_retry)
-
     try:
         time.sleep(wait)
         response = urllib2.urlopen(url)
