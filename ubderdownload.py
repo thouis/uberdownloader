@@ -64,10 +64,6 @@ if __name__ == "__main__":
     user_id = int(sys.argv[1])
     dest_dir = sys.argv[2]
 
-    request_successful = False
-    max_retries = 5
-    current_retry = 0
-
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
 
