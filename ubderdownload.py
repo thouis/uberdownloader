@@ -1,4 +1,12 @@
-import urllib2
+from __future__ import unicode_literals
+
+try:
+    from urllib2 import urlopen
+    from urllib2 import HTTPError, URLError
+except ImportError:
+    from urllib.request import urlopen
+    from urllib.error import HTTPError, URLError
+
 import time
 import json
 import sys
@@ -11,14 +19,14 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
 
     try:
         time.sleep(wait)
-        response = urllib2.urlopen(url)
-    except urllib2.HTTPError as e:
+        response = urlopen(url)
+    except HTTPError as e:
         if e.code == 429:  # too many requests
             print("Too many requests / minute, falling back to {} seconds between fetches.".format(int(1.5 * wait)))
             # exponential falloff
             return get_page_with_wait(url, wait=(1.5 * wait))
         raise
-    except urllib2.URLError as e:
+    except URLError as e:
         # sometimes DNS or the network temporarily falls over, and will come back if we try again
         if current_retry_count < max_retries:
             return get_page_with_wait(url, 5, current_retry_count=current_retry_count + 1)  # Wait 5 seconds between retries
@@ -29,7 +37,7 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
 
 def results(url):
     while url is not None:
-        data = json.loads(get_page_with_wait(url, 0))
+        data = json.loads(get_page_with_wait(url, 0).decode('utf-8'))
         for r in data["results"]:
             yield r
         url = data["next"]
@@ -57,7 +65,7 @@ def save_sgf(out_filename, SGF_URL, name):
     else:
         print("Downloading {}...".format(name))
         sgf = get_page_with_wait(SGF_URL)
-        with open(out_filename, "w") as f:
+        with open(out_filename, "wb") as f:
             f.write(sgf)
 
 if __name__ == "__main__":
