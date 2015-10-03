@@ -33,11 +33,11 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
         print("Can't fetch '{}'.  Check your network connection.".format(url))
         raise
     else:
-        return response.read().decode()
+        return response.read()
 
 def results(url):
     while url is not None:
-        data = json.loads(get_page_with_wait(url, 0))
+        data = json.loads(get_page_with_wait(url, 0).decode('utf-8'))
         for r in data["results"]:
             yield r
         url = data["next"]
@@ -65,7 +65,7 @@ def save_sgf(out_filename, SGF_URL, name):
     else:
         print("Downloading {}...".format(name))
         sgf = get_page_with_wait(SGF_URL)
-        with open(out_filename, "w") as f:
+        with open(out_filename, "wb") as f:
             f.write(sgf)
 
 if __name__ == "__main__":
