@@ -26,7 +26,7 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
 
     try:
         time.sleep(wait)
-        response = requests.get(url)
+        response = urlopen(url)
     except HTTPError as e:
         if e.code == 429:  # too many requests
             print("Too many requests / minute, falling back to {} seconds between fetches.".format(int(1.5 * wait)))
