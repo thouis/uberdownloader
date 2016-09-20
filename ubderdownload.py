@@ -14,12 +14,6 @@ import sys
 import os
 import os.path
 
-try:
-    import requests
-except ImportError:
-    print("Error, requests library unavailable!")
-    sys.exit()
-
 def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SGF throttling is 10/minute
     if wait < 0.01:
         wait = 0.01
