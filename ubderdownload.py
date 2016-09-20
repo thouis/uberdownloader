@@ -6,6 +6,7 @@ try:
 except ImportError:
     from urllib.request import urlopen
     from urllib.error import HTTPError, URLError
+    
 
 import time
 import json
@@ -13,25 +14,33 @@ import sys
 import os
 import os.path
 
+try:
+    import requests
+except ImportError:
+    print("Error, requests library unavailable!")
+    sys.exit()
+
 def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SGF throttling is 10/minute
     if wait < 0.01:
         wait = 0.01
 
     try:
         time.sleep(wait)
-        response = urlopen(url)
+        response = requests.get(url)
     except HTTPError as e:
         if e.code == 429:  # too many requests
             print("Too many requests / minute, falling back to {} seconds between fetches.".format(int(1.5 * wait)))
             # exponential falloff
             return get_page_with_wait(url, wait=(1.5 * wait))
-        raise
+        #raise            #Commented to allow script to continue
+        if e.code == 403:
+            return 'ERROR'
     except URLError as e:
         # sometimes DNS or the network temporarily falls over, and will come back if we try again
         if current_retry_count < max_retries:
             return get_page_with_wait(url, 5, current_retry_count=current_retry_count + 1)  # Wait 5 seconds between retries
         print("Can't fetch '{}'.  Check your network connection.".format(url))
-        raise
+        #raise            #Commented to allow script to continue
     else:
         return response.read()
 
@@ -65,8 +74,11 @@ def save_sgf(out_filename, SGF_URL, name):
     else:
         print("Downloading {}...".format(name))
         sgf = get_page_with_wait(SGF_URL)
-        with open(out_filename, "wb") as f:
-            f.write(sgf)
+        if sgf == 'ERROR':
+            print("Skipping {} because it encountered an error.".format(name))
+        else:
+            with open(out_filename, "wb") as f:
+                f.write(sgf)
 
 if __name__ == "__main__":
     user_id = int(sys.argv[1])
