@@ -6,7 +6,7 @@ try:
 except ImportError:
     from urllib.request import urlopen
     from urllib.error import HTTPError, URLError
-    
+
 
 import time
 import json
@@ -28,7 +28,7 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
             return get_page_with_wait(url, wait=(1.5 * wait))
         #raise            #Commented to allow script to continue
         if e.code == 403:
-            return 'ERROR'
+            return False
     except URLError as e:
         # sometimes DNS or the network temporarily falls over, and will come back if we try again
         if current_retry_count < max_retries:
@@ -68,7 +68,7 @@ def save_sgf(out_filename, SGF_URL, name):
     else:
         print("Downloading {}...".format(name))
         sgf = get_page_with_wait(SGF_URL)
-        if sgf == 'ERROR':
+        if not sgf:
             print("Skipping {} because it encountered an error.".format(name))
         else:
             with open(out_filename, "wb") as f:
