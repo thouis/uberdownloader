@@ -13,6 +13,8 @@ import sys
 import os
 import os.path
 
+from loguru import logger
+
 
 def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SGF throttling is 10/minute
     if wait < 0.01:
@@ -43,8 +45,8 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
 def results(url):
     while url is not None:
         data = json.loads(get_page_with_wait(url, 0).decode('utf-8'))
-        for r in data["results"]:
-            yield r
+        for _ in data["results"]:
+            yield _
         url = data["next"]
 
 
