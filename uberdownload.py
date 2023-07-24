@@ -52,8 +52,8 @@ def results(url):
 
 def user_games(user_id):
     url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
-    for r in results(url):
-        yield r["id"]
+    for _ in results(url):
+        yield _["id"]
 
 
 def user_reviews(user_id):
