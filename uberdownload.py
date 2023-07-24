@@ -30,7 +30,7 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
             return get_page_with_wait(url, wait=(1.5 * wait))
         # raise            #Commented to allow script to continue
         if e.code == 403:
-            return False
+            raise Exception("forbidden to access URL.")
     except URLError as e:
         # sometimes DNS or the network temporarily falls over, and will come back if we try again
         if current_retry_count < max_retries:
