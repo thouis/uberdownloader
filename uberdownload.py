@@ -1,12 +1,4 @@
-from __future__ import unicode_literals
-
-try:
-    from urllib2 import urlopen
-    from urllib2 import HTTPError, URLError
-except ImportError:
-    from urllib.request import urlopen
-    from urllib.error import HTTPError, URLError
-
+import requests
 
 import time
 import json
@@ -14,41 +6,55 @@ import sys
 import os
 import os.path
 
+from loguru import logger
+
+
 def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SGF throttling is 10/minute
     if wait < 0.01:
         wait = 0.01
 
     try:
         time.sleep(wait)
-        response = urlopen(url)
+        response = requests.get(url)
     except HTTPError as e:
         if e.code == 429:  # too many requests
             print("Too many requests / minute, falling back to {} seconds between fetches.".format(int(1.5 * wait)))
             # exponential falloff
             return get_page_with_wait(url, wait=(1.5 * wait))
-        #raise            #Commented to allow script to continue
+        # raise            #Commented to allow script to continue
         if e.code == 403:
-            return False
+            raise Exception("forbidden to access URL.")
     except URLError as e:
         # sometimes DNS or the network temporarily falls over, and will come back if we try again
         if current_retry_count < max_retries:
-            return get_page_with_wait(url, 5, current_retry_count=current_retry_count + 1)  # Wait 5 seconds between retries
+            return get_page_with_wait(url, 5,
+                                      current_retry_count=current_retry_count + 1)  # Wait 5 seconds between retries
         print("Can't fetch '{}'.  Check your network connection.".format(url))
-        #raise            #Commented to allow script to continue
+        # raise            #Commented to allow script to continue
     else:
-        return response.read()
+        logger.debug(f"Response is {response}. headers = {response.headers}")
+        if response.headers['content-type'] == 'application/json':
+            return response.json()
+        if response.headers['content-type'] == 'application/x-go-sgf; charset=utf-8':
+            # logger.debug(f"Returning text even though bytes are {response.content}")
+            return response.content
+        raise Exception(f"Response headers {response.headers['content-type']} not recognized.")
+
 
 def results(url):
     while url is not None:
-        data = json.loads(get_page_with_wait(url, 0).decode('utf-8'))
-        for r in data["results"]:
-            yield r
+        data = get_page_with_wait(url, 0)
+        for _ in data["results"]:
+            yield _
         url = data["next"]
 
+
 def user_games(user_id):
-    url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
-    for r in results(url):
-        yield r["id"]
+    url = "https://online-go.com/api/v1/players{}/games?ended__isnull=0&ordering=-ended&page_size=5&format=json".format(user_id)
+    # url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
+    for _ in results(url):
+        yield _["id"]
+
 
 def user_reviews(user_id):
     return
@@ -56,11 +62,13 @@ def user_reviews(user_id):
     for r in results(url):
         yield r["id"], r["game"]["id"]
 
+
 def reviews_for_game(game_id):
     return
     url = "https://online-go.com/api/v1/games/{}/reviews?format=json".format(game_id)
     for r in results(url):
         yield r["id"]
+
 
 def save_sgf(out_filename, SGF_URL, name):
     if os.path.exists(out_filename):
@@ -73,6 +81,7 @@ def save_sgf(out_filename, SGF_URL, name):
         else:
             with open(out_filename, "wb") as f:
                 f.write(sgf)
+
 
 if __name__ == "__main__":
     user_id = int(sys.argv[1])
@@ -91,6 +100,6 @@ if __name__ == "__main__":
                      "review {} of game {}".format(r, g))
 
     for r, g in user_reviews(sys.argv[1]):
-            save_sgf(os.path.join(dest_dir, "OGS_game_{}_review_{}.sgf".format(g, r)),
-                     "https://online-go.com/api/v1/reviews/{}/sgf".format(g),
-                     "review {} of game {}".format(r, g))
+        save_sgf(os.path.join(dest_dir, "OGS_game_{}_review_{}.sgf".format(g, r)),
+                 "https://online-go.com/api/v1/reviews/{}/sgf".format(g),
+                 "review {} of game {}".format(r, g))

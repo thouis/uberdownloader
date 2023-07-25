@@ -7,3 +7,7 @@ python uberdownload.py PLAYER_ID DESTINATION_DIRECTORY
    DESTINATION_DIRECTORY will be created if it does not exist.
 
 Existing files in the destination directory will not be overwritten.
+
+# Acknowledgements
+
+Thanks to benjito at OGS for [support](https://forums.online-go.com/t/getting-list-of-games-in-json-format-works-for-incognito-browser-window-but-not-from-programming-library/48634).
