@@ -1,11 +1,4 @@
-from __future__ import unicode_literals
-
-try:
-    from urllib2 import urlopen
-    from urllib2 import HTTPError, URLError
-except ImportError:
-    from urllib.request import urlopen
-    from urllib.error import HTTPError, URLError
+import requests
 
 import time
 import json
@@ -22,7 +15,7 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
 
     try:
         time.sleep(wait)
-        response = urlopen(url)
+        response = requests.get(url)
     except HTTPError as e:
         if e.code == 429:  # too many requests
             print("Too many requests / minute, falling back to {} seconds between fetches.".format(int(1.5 * wait)))
@@ -39,19 +32,26 @@ def get_page_with_wait(url, wait=6, max_retries=1, current_retry_count=0):  # SG
         print("Can't fetch '{}'.  Check your network connection.".format(url))
         # raise            #Commented to allow script to continue
     else:
-        return response.read()
+        logger.debug(f"Response is {response}. headers = {response.headers}")
+        if response.headers['content-type'] == 'application/json':
+            return response.json()
+        if response.headers['content-type'] == 'application/x-go-sgf; charset=utf-8':
+            # logger.debug(f"Returning text even though bytes are {response.content}")
+            return response.content
+        raise Exception(f"Response headers {response.headers['content-type']} not recognized.")
 
 
 def results(url):
     while url is not None:
-        data = json.loads(get_page_with_wait(url, 0).decode('utf-8'))
+        data = get_page_with_wait(url, 0)
         for _ in data["results"]:
             yield _
         url = data["next"]
 
 
 def user_games(user_id):
-    url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
+    url = "https://online-go.com/api/v1/players{}/games?ended__isnull=0&ordering=-ended&page_size=5&format=json".format(user_id)
+    # url = "https://online-go.com/api/v1/players/{}/games/?format=json".format(user_id)
     for _ in results(url):
         yield _["id"]
 
